@@ -628,6 +628,9 @@ static int avl62x1_tune(struct dvb_frontend *fe, bool re_tune,
 	avl62x1_lock_status lock;
 	uint16_t sig_strength;
 	int16_t snr_db_x100, sqi;
+
+	memset(&carrier_info, 0, sizeof(carrier_info));
+	memset(&stream_info, 0, sizeof(stream_info));
 	u32 tuner_status;
 	int ret;
 
