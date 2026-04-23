@@ -7,6 +7,7 @@
  */
 
 #include "avl62x1_lib.h"
+#include <linux/math64.h>
 
 uint16_t __avl62x1_check_chip_ready(struct avl62x1_chip *chip)
 {
@@ -485,7 +486,6 @@ uint16_t __avl62x1_get_sro(int32_t *sro_ppm, struct avl62x1_chip *chip)
 	uint16_t r = AVL_EC_OK;
 	int32_t sr_error = 0;
 	uint32_t sr = 0;
-	uint64_t tmp;
 
 	r |= avl_bms_read32(chip->chip_pub->i2c_addr,
 			    s_AVL62X1_S2X_symbol_rate_Hz_iaddr,
@@ -494,9 +494,7 @@ uint16_t __avl62x1_get_sro(int32_t *sro_ppm, struct avl62x1_chip *chip)
 			    s_AVL62X1_S2X_symbol_rate_error_Hz_iaddr,
 			    (uint32_t *)&sr_error);
 
-	tmp = (uint64_t)sr_error * 1000000;
-	do_div(tmp, sr);
-	*sro_ppm = (int32_t)tmp;
+	*sro_ppm = (int32_t)div64_s64((s64)sr_error * 1000000LL, (s64)sr);
 	return (r);
 }
 

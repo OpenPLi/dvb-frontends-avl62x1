@@ -688,6 +688,12 @@ uint16_t avl62x1_get_stream_list(
 					    stream_list_ptr_2 + stream * 4,
 					    &tmp16);
 			streams[stream].t2mi.pid = tmp16;
+
+			r |= avl62x1_switch_stream(&streams[stream],chip);
+			avl_bsp_delay(500);
+			r |= avl62x1_get_t2mi_plp_list(
+			    &streams[stream].t2mi.plp_list,
+			    chip);
 		}
 
 	}
@@ -1924,7 +1930,7 @@ uint16_t avl62x1_blindscan_confirm_carrier(
 
 	r |= avl_bms_write8(chip->chip_pub->i2c_addr,
 			    c_AVL62X1_SP_S2X_sp_t2mi_ts_pid_detect_auto_en_caddr,
-			    0);
+			    1);
 
 	r |= avl_bms_write8(chip->chip_pub->i2c_addr,
 			    c_AVL62X1_SP_S2X_sp_raw_t2mi_mode_caddr,
