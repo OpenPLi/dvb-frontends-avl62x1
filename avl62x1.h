@@ -10,6 +10,7 @@
 #ifndef _AVL62X1_H_
 #define _AVL62X1_H_
 
+#include <linux/version.h>
 #include <linux/firmware.h>
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/version.h>
@@ -19,6 +20,14 @@
 
 #define str(a) #a
 #define xstr(a) str(a)
+
+#define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
+
+#ifndef AVL_S2X_ENUMS
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0))
+#define AVL_S2X_ENUMS
+#endif
+#endif
 
 #define DVB_VER_INT(maj,min) (((maj) << 16) + (min))
 #define DVB_VER_ATLEAST(maj, min) \

@@ -66,6 +66,130 @@ struct avl62x1_priv {
 	struct avl62x1_bs_state bs_state;
 };
 
+static unsigned char modcod[32][2] = //indexed by PLS/4
+{
+	{QAM_AUTO,	FEC_AUTO}, //0 DUMMY PLFRAME
+
+#ifdef AVL_S2X_ENUMS
+	{QPSK,		FEC_1_4}, //1
+	{QPSK,		FEC_1_3}, //2
+#else
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_AUTO},
+#endif
+	{QPSK,		FEC_2_5}, //3
+	{QPSK,		FEC_1_2},
+	{QPSK,		FEC_3_5},
+	{QPSK,		FEC_2_3},
+	{QPSK,		FEC_3_4},
+	{QPSK,		FEC_4_5},
+	{QPSK,		FEC_5_6},
+	{QPSK,		FEC_8_9},
+	{QPSK,		FEC_9_10}, //11
+
+	{PSK_8,		FEC_3_5}, //12
+	{PSK_8,		FEC_2_3},
+	{PSK_8,		FEC_3_4},
+	{PSK_8,		FEC_5_6},
+	{PSK_8,		FEC_8_9},
+	{PSK_8,		FEC_9_10},
+
+	{APSK_16,	FEC_2_3}, //18
+	{APSK_16,	FEC_3_4},
+	{APSK_16,	FEC_4_5},
+	{APSK_16,	FEC_5_6},
+	{APSK_16,	FEC_8_9},
+	{APSK_16,	FEC_9_10},
+
+	{APSK_32,	FEC_3_4}, //24
+	{APSK_32,	FEC_4_5},
+	{APSK_32,	FEC_5_6},
+	{APSK_32,	FEC_8_9},
+	{APSK_32,	FEC_9_10},
+
+	{QAM_AUTO,	FEC_AUTO}, //29 Reserved
+	{QAM_AUTO,	FEC_AUTO}, //30 Reserved
+	{QAM_AUTO,	FEC_AUTO}, //31 Reserved
+};
+
+#ifdef AVL_S2X_ENUMS
+static unsigned char s2x_modcod[][2] = //indexed by (PLS-128)/2
+{
+	{QAM_AUTO,	FEC_AUTO}, //128 VL SNR set 1 UNIMP
+	{QAM_AUTO,	FEC_AUTO}, //130 VL SNR set 2 UNIMP
+
+	{QPSK,		FEC_13_45}, //132
+	{QPSK,		FEC_9_20},
+	{QPSK,		FEC_11_20},
+
+	{APSK_8_L,	FEC_5_9}, //138
+	{APSK_8_L,	FEC_26_45},
+	{PSK_8,		FEC_23_36}, //142
+	{PSK_8,		FEC_25_36},
+	{PSK_8,		FEC_13_18},
+
+	{APSK_16_L,	FEC_1_2}, //148
+	{APSK_16_L,	FEC_8_15},
+	{APSK_16_L,	FEC_5_9},
+	{APSK_16,	FEC_26_45}, //154
+	{APSK_16,	FEC_3_5},
+	{APSK_16_L,	FEC_3_5}, //158
+	{APSK_16,	FEC_28_45}, //160
+	{APSK_16,	FEC_23_36},
+	{APSK_16_L,	FEC_2_3}, //164
+	{APSK_16,	FEC_25_36}, //166
+	{APSK_16,	FEC_13_18},
+	{APSK_16,	FEC_7_9},
+	{APSK_16,	FEC_77_90},
+
+	{APSK_32_L,	FEC_2_3}, //174
+	{QAM_AUTO,	FEC_AUTO}, //176 UNUSED
+	{APSK_32,	FEC_32_45}, //178
+	{APSK_32,	FEC_11_15},
+	{APSK_32,	FEC_7_9},
+
+	{APSK_64_L,	FEC_32_45}, //184
+	{APSK_64,	FEC_11_15},
+	{QAM_AUTO,	FEC_AUTO}, //188 UNUSED
+	{APSK_64,	FEC_7_9}, //190
+	{QAM_AUTO,	FEC_AUTO}, //192 UNUSED
+	{APSK_64,	FEC_4_5}, //194
+	{QAM_AUTO,	FEC_AUTO}, //196 UNUSED
+	{APSK_64,	FEC_5_6}, //198
+
+	{QAM_AUTO,	FEC_AUTO}, //200-202 UNIMP 128APSK
+	{QAM_AUTO,	FEC_AUTO},
+
+	{QAM_AUTO,	FEC_AUTO}, //204 UNIMP 256APSK(L)
+	{QAM_AUTO,	FEC_AUTO},
+	{QAM_AUTO,	FEC_AUTO},
+	{QAM_AUTO,	FEC_AUTO},
+	{QAM_AUTO,	FEC_AUTO},
+	{QAM_AUTO,	FEC_AUTO}, //214
+
+	{QPSK,		FEC_AUTO}, //216 short
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_8_15},
+	{QPSK,		FEC_32_45},
+
+	{PSK_8,		FEC_AUTO}, //228
+	{PSK_8,		FEC_8_15},
+	{PSK_8,		FEC_26_45},
+	{PSK_8,		FEC_32_45},
+
+	{APSK_16,	FEC_AUTO}, //236
+	{APSK_16,	FEC_8_15},
+	{APSK_16,	FEC_26_45},
+	{APSK_16,	FEC_3_5},
+	{APSK_16,	FEC_32_45},
+
+	{APSK_32,	FEC_2_3}, //246
+	{APSK_32,	FEC_32_45}
+};
+#endif
+
 static int avl62x1_blindscan_props(struct dtv_frontend_properties *props,
 				   struct avl62x1_carrier_info *carrier_info,
 				   struct avl62x1_stream_info *stream_info)
@@ -113,25 +237,27 @@ static int avl62x1_blindscan_props(struct dtv_frontend_properties *props,
 	} else if (carrier_info->signal_type == avl62x1_dvbs2) {
 		props->delivery_system = SYS_DVBS2;
 
-		switch (carrier_info->modulation) {
-		case avl62x1_qpsk:
-			props->modulation = QPSK;
-			break;
-		case avl62x1_8psk:
-			props->modulation = PSK_8;
-			break;
-		case avl62x1_16apsk:
-			props->modulation = APSK_16;
-			break;
-		default:
-			props->modulation = APSK_32;
-			break;
-		}
-
-		if (carrier_info->pilot == avl62x1_pilot_on)
+		if (carrier_info->dvbs2_ccm_acm == avl62x1_dvbs2_ccm) {
+#ifdef AVL_S2X_ENUMS
+			if (carrier_info->pls_acm >= 128) {
+				int idx = (carrier_info->pls_acm - 128) / 2;
+				idx = (idx >= ARRAY_LENGTH(s2x_modcod)) ? 0 : idx;
+				props->modulation = s2x_modcod[idx][0];
+				props->fec_inner = s2x_modcod[idx][1];
+			} else
+#endif
+			{
+				int idx = carrier_info->pls_acm / 4;
+				idx = (idx >= ARRAY_LENGTH(modcod)) ? 0 : idx;
+				props->modulation = modcod[idx][0];
+				props->fec_inner = modcod[idx][1];
+			}
+			props->pilot = (carrier_info->pls_acm & 1) ? PILOT_ON : PILOT_OFF;
+		} else {
+			props->modulation = QAM_AUTO;
+			props->fec_inner = FEC_AUTO;
 			props->pilot = PILOT_ON;
-		else
-			props->pilot = PILOT_OFF;
+		}
 
 		switch (carrier_info->code_rate.dvbs2_code_rate) {
 		case avl62x1_dvbs2_cr_2_5:
@@ -863,52 +989,26 @@ static int avl62x1_get_frontend(struct dvb_frontend *fe,
 			else
 				c->pilot = PILOT_OFF;
 
-			switch (carrier_info.modulation) {
-			case avl62x1_qpsk:
-				c->modulation = QPSK;
-				break;
-			case avl62x1_8psk:
-				c->modulation = PSK_8;
-				break;
-			case avl62x1_16apsk:
-				c->modulation = APSK_16;
-				break;
-			default:
-				c->modulation = APSK_32;
-				break;
-			}
-
-			switch (carrier_info.code_rate.dvbs2_code_rate) {
-			case avl62x1_dvbs2_cr_2_5:
-				c->fec_inner = FEC_2_5;
-				break;
-			case avl62x1_dvbs2_cr_1_2:
-				c->fec_inner = FEC_1_2;
-				break;
-			case avl62x1_dvbs2_cr_3_5:
-				c->fec_inner = FEC_3_5;
-				break;
-			case avl62x1_dvbs2_cr_2_3:
-				c->fec_inner = FEC_2_3;
-				break;
-			case avl62x1_dvbs2_cr_3_4:
-				c->fec_inner = FEC_3_4;
-				break;
-			case avl62x1_dvbs2_cr_4_5:
-				c->fec_inner = FEC_4_5;
-				break;
-			case avl62x1_dvbs2_cr_5_6:
-				c->fec_inner = FEC_5_6;
-				break;
-			case avl62x1_dvbs2_cr_8_9:
-				c->fec_inner = FEC_8_9;
-				break;
-			case avl62x1_dvbs2_cr_9_10:
-				c->fec_inner = FEC_9_10;
-				break;
-			default:
+			if (carrier_info.dvbs2_ccm_acm == avl62x1_dvbs2_ccm) {
+#ifdef AVL_S2X_ENUMS
+				if (carrier_info.pls_acm >= 128) {
+					int idx = (carrier_info.pls_acm - 128) / 2;
+					idx = (idx >= ARRAY_LENGTH(s2x_modcod)) ? 0 : idx;
+					c->modulation = s2x_modcod[idx][0];
+					c->fec_inner = s2x_modcod[idx][1];
+				} else
+#endif
+				{
+					int idx = carrier_info.pls_acm / 4;
+					idx = (idx >= ARRAY_LENGTH(modcod)) ? 0 : idx;
+					c->modulation = modcod[idx][0];
+					c->fec_inner = modcod[idx][1];
+				}
+				c->pilot = (carrier_info.pls_acm & 1) ? PILOT_ON : PILOT_OFF;
+			} else {
+				c->modulation = QAM_AUTO;
 				c->fec_inner = FEC_AUTO;
-				break;
+				c->pilot = PILOT_ON;
 			}
 
 			switch (carrier_info.roll_off) {
