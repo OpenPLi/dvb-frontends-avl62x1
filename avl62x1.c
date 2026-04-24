@@ -606,6 +606,8 @@ static int avl62x1_init(struct dvb_frontend *fe)
 {
 	struct avl62x1_priv *priv = fe->demodulator_priv;
 
+	__avl62x1_halt(priv->chip);
+
 	priv->tune_state = avl62x1_tune_state_idle;
 
 	return 0;
