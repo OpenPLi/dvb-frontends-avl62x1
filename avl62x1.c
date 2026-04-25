@@ -770,6 +770,7 @@ static int avl62x1_tune(struct dvb_frontend *fe, bool re_tune,
 	}
 
 	if (re_tune) {
+		__avl62x1_halt(priv->chip);
 		priv->tune_state = avl62x1_tune_state_tuner_trylock;
 
 		if (c->symbol_rate < 1000)
