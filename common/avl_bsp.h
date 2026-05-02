@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <linux/types.h>
 #endif
-#include <stddef.h>
+#include <linux/stddef.h>
 
 typedef struct mutex avl_sem_t;
 /********************************/
