@@ -11,6 +11,7 @@
 #define _AVL62X1_H_
 
 #include <linux/version.h>
+#include <linux/refcount.h>
 #include <linux/firmware.h>
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/version.h>
@@ -56,11 +57,11 @@ struct i2cctl_ioctl_lock_req {
 struct avl62x1_priv
 {
 	struct i2c_adapter *i2c;
-	//struct avl62x1_config *config;
 	struct dvb_frontend frontend;
 	enum fe_delivery_system delivery_system;
 	struct avl62x1_chip *chip;
 	const struct firmware *fw;
+	struct avl62x1_bs_state bs_state;
 };
 
 struct avl62x1_config
@@ -77,14 +78,16 @@ struct avl62x1_config
 };
 
 struct avl62x1_bs_state {
-	uint8_t bs_mode;
-	uint8_t num_carriers;
-	int8_t cur_carrier;
-	int8_t cur_stream;
+	refcount_t running;
+	struct task_struct *thread;
+	struct dtv_frontend_properties min_prop;
+	struct dtv_frontend_properties max_prop;
+	int progress;
+	int index;
+	struct dtv_frontend_properties *props;
+	int num_props;
 	struct avl62x1_blind_scan_params params;
 	struct avl62x1_blind_scan_info info;
-	struct avl62x1_carrier_info *carriers;
-	struct avl62x1_stream_info *streams;
 };
 
 extern struct dvb_frontend *avl62x1_attach(struct avl62x1_config *config,
