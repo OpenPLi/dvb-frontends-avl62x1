@@ -41,6 +41,10 @@
 #define AVL62X1_BS_CTRL_PROP			isdbt_sb_segment_idx
 //isdbt_sb_segment_idx fields
 #define AVL62X1_BS_CTRL_VALID_STREAM_MASK	(0x80000000)
+/* Aliases for compatibility with Edision blindscan implementation */
+#define AVL62X1_T2MI_CTRL_PROP			AVL62X1_BS_CTRL_PROP
+#define AVL62X1_T2MI_CTRL_VALID_STREAM_MASK	AVL62X1_BS_CTRL_VALID_STREAM_MASK
+#define AVL62X1_T2MI_PID_SHIFT			AVL62X1_BS_T2MI_PID_SHIFT
 #define AVL62X1_BS_CTRL_NEW_TUNE_MASK		(0x40000000)
 #define AVL62X1_BS_CTRL_MORE_RESULTS_MASK	(0x20000000)
 
@@ -53,6 +57,20 @@ struct i2cctl_ioctl_lock_req {
 	int demod;
 	int tuner;
 };
+
+struct avl62x1_bs_state {
+	refcount_t running;
+	struct task_struct *thread;
+	struct dtv_frontend_properties min_prop;
+	struct dtv_frontend_properties max_prop;
+	int progress;
+	int index;
+	struct dtv_frontend_properties *props;
+	int num_props;
+	struct avl62x1_blind_scan_params params;
+	struct avl62x1_blind_scan_info info;
+};
+
 
 struct avl62x1_priv
 {
@@ -75,19 +93,6 @@ struct avl62x1_config
 	//uint8_t demod_address; // demodulator i2c address
 
 
-};
-
-struct avl62x1_bs_state {
-	refcount_t running;
-	struct task_struct *thread;
-	struct dtv_frontend_properties min_prop;
-	struct dtv_frontend_properties max_prop;
-	int progress;
-	int index;
-	struct dtv_frontend_properties *props;
-	int num_props;
-	struct avl62x1_blind_scan_params params;
-	struct avl62x1_blind_scan_info info;
 };
 
 extern struct dvb_frontend *avl62x1_attach(struct avl62x1_config *config,

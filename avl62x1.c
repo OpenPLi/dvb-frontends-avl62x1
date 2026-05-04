@@ -11,13 +11,12 @@
 
 #include <linux/init.h>
 #include <linux/delay.h>
-#include <linux/firmware.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/module.h>
-#include <linux/vmalloc.h>
+#include <linux/moduleparam.h>
 #include <linux/string.h>
 #include <linux/bitrev.h>
 #include <linux/types.h>
@@ -89,7 +88,6 @@ static char sel_fw[256] = {0};
 
 //--- module params ---
 static int debug = 0;
-static int bs_min_sr = 1000000;
 char fw_path[256] = {0};
 //-------------------
 
@@ -1527,7 +1525,6 @@ static enum dvbfe_algo get_frontend_algo(struct dvb_frontend *fe)
 static int set_frontend(struct dvb_frontend *fe)
 {
 	int ret;
-	struct avl62x1_priv *priv = fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	p_debug("");
 
