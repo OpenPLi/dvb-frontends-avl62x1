@@ -7,10 +7,12 @@
  *
  */
 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/init.h>
 #include <linux/delay.h>
+#include <linux/firmware.h>
+#include <linux/vmalloc.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
 #include <linux/kthread.h>
@@ -28,6 +30,8 @@
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
 #include <linux/seq_file.h>
+#include <linux/dvb/frontend.h>
+#include <media/dvb_frontend.h>
 #include <linux/slab.h>
 #include <linux/ioctl.h>
 
@@ -91,6 +95,9 @@ static int debug = 0;
 char fw_path[256] = {0};
 //-------------------
 
+#define MHz 1000000UL
+#define kHz 1000UL
+
 /* Mutexes for I2C bus arbitration between demodulator and tuner.
  * Previously declared as part of the i2cctl character device block.
  * Retained here as they are used throughout the driver for I2C access control. */
@@ -150,10 +157,9 @@ static unsigned char s2x_modcod[][2] = //indexed by (PLS-128)/2
 	{QAM_AUTO,	FEC_AUTO}, //128 VL SNR set 1 UNIMP
 	{QAM_AUTO,	FEC_AUTO}, //130 VL SNR set 2 UNIMP
 
-	//Long code
 	{QPSK,		FEC_13_45}, //132
 	{QPSK,		FEC_9_20},
-	{QPSK, 		FEC_11_20},
+	{QPSK,		FEC_11_20},
 
 	{APSK_8_L,	FEC_5_9}, //138
 	{APSK_8_L,	FEC_26_45},
@@ -200,21 +206,19 @@ static unsigned char s2x_modcod[][2] = //indexed by (PLS-128)/2
 	{QAM_AUTO,	FEC_AUTO},
 	{QAM_AUTO,	FEC_AUTO}, //214
 
-	//Short code
-	//11/45, 4/15, 14/15, 7/15 not included in S2X additions to DVB (?!!)
-	{QPSK,		FEC_AUTO/*FEC_11_45*/}, //216
-	{QPSK,		FEC_AUTO/*FEC_4_15*/},
-	{QPSK,		FEC_AUTO/*FEC_14_15*/},
-	{QPSK,		FEC_AUTO/*FEC_7_15*/},
+	{QPSK,		FEC_AUTO}, //216 short
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_AUTO},
+	{QPSK,		FEC_AUTO},
 	{QPSK,		FEC_8_15},
 	{QPSK,		FEC_32_45},
 
-	{PSK_8,		FEC_AUTO/*FEC_7_15*/}, //228
+	{PSK_8,		FEC_AUTO}, //228
 	{PSK_8,		FEC_8_15},
 	{PSK_8,		FEC_26_45},
 	{PSK_8,		FEC_32_45},
-	
-	{APSK_16,	FEC_AUTO/*FEC_7_15*/}, //236
+
+	{APSK_16,	FEC_AUTO}, //236
 	{APSK_16,	FEC_8_15},
 	{APSK_16,	FEC_26_45},
 	{APSK_16,	FEC_3_5},
@@ -1627,54 +1631,53 @@ static void release_fe(struct dvb_frontend *fe)
 }
 
 static struct dvb_frontend_ops avl62x1_ops = {
-    .delsys = {SYS_DVBS, SYS_DVBS2},
-    .info = {
-	.name = "Availink avl62x1",
-	.frequency_min_hz = 950000000,
-	.frequency_max_hz = 2150000000UL,
-	.frequency_stepsize_hz = 0,
-	.frequency_tolerance_hz = 0,
-	.symbol_rate_min = 1000000,
-	.symbol_rate_max = 55000000,
-	.caps =
-	    FE_CAN_FEC_1_2 |
-	    FE_CAN_FEC_2_3 |
-	    FE_CAN_FEC_3_4 |
-	    FE_CAN_FEC_4_5 |
-	    FE_CAN_FEC_5_6 |
-	    FE_CAN_FEC_6_7 |
-	    FE_CAN_FEC_7_8 |
-	    FE_CAN_FEC_AUTO |
-	    FE_CAN_QPSK |
-	    FE_CAN_QAM_16 |
-	    FE_CAN_QAM_32 |
-	    FE_CAN_QAM_64 |
-	    FE_CAN_QAM_AUTO |
-	    FE_CAN_TRANSMISSION_MODE_AUTO |
-	    FE_CAN_MUTE_TS |
-	    FE_CAN_2G_MODULATION |
-	    FE_CAN_MULTISTREAM |
-	    FE_CAN_INVERSION_AUTO |
-	    FE_CAN_RECOVER},
+	.info = {
+		.name = "Availink AVL6261",
+		.frequency_min_hz =  950 * MHz,
+		.frequency_max_hz = 2150 * MHz,
+		.frequency_stepsize_hz =  1011 * kHz,
+		.frequency_tolerance_hz = 5 * MHz,
+		.symbol_rate_min = 0,
+		.symbol_rate_max = 60000000,
+		.caps = FE_CAN_INVERSION_AUTO |
+			FE_CAN_FEC_1_2 |
+			FE_CAN_FEC_2_3 |
+			FE_CAN_FEC_3_4 |
+			FE_CAN_FEC_4_5 |
+			FE_CAN_FEC_5_6 |
+			FE_CAN_FEC_6_7 |
+			FE_CAN_FEC_7_8 |
+			FE_CAN_FEC_8_9 |
+			FE_CAN_FEC_AUTO |
+			FE_CAN_QPSK |
+			FE_CAN_TRANSMISSION_MODE_AUTO |
+			FE_CAN_GUARD_INTERVAL_AUTO |
+			FE_CAN_HIERARCHY_AUTO |
+			FE_CAN_MULTISTREAM |
+			FE_CAN_2G_MODULATION |
+			FE_CAN_RECOVER
+	},
 
-    .release = release_fe,
-    .init = init_fe,
-    .sleep = sleep_fe,
+	.delsys = { SYS_DVBS2, SYS_DVBS, },
 
-    .i2c_gate_ctrl = i2c_gate_ctrl,
+	.release = release_fe,
+	.init = init_fe,
+	.sleep = sleep_fe,
+	.tune = tune,
+	.get_frontend_algo = get_frontend_algo,
+	.get_frontend = get_frontend,
 
-    .read_status = read_status,
-    .read_ber = read_ber, //V3
-    .read_snr = read_snr, //V3
-    .read_signal_strength = read_signal_strength, //V3
-    .set_tone = diseqc_set_tone,
-    .set_voltage = diseqc_set_voltage,
-    .diseqc_send_master_cmd = diseqc_send_master_cmd,
-    .diseqc_send_burst = diseqc_send_burst,
-    .get_frontend_algo = get_frontend_algo,
-    .tune = tune, //overrides the default swzigzag
-    .set_frontend = set_frontend,
-    .get_frontend = get_frontend,
+	.read_status = read_status,
+	.read_ber = read_ber,
+	.read_signal_strength = read_signal_strength,
+	.read_snr = read_snr,
+
+	.diseqc_send_master_cmd = diseqc_send_master_cmd,
+	.diseqc_send_burst = diseqc_send_burst,
+	.set_tone = diseqc_set_tone,
+	.set_voltage = diseqc_set_voltage,
+
+	.i2c_gate_ctrl = i2c_gate_ctrl,
 };
 
 static int avl62x1_get_firmware(struct dvb_frontend *fe) {
