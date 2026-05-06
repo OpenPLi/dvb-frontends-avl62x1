@@ -1769,6 +1769,12 @@ struct dvb_frontend *avl62x1_attach(struct avl62x1_config *config,
 	if (!priv->bs_state.props)
 		goto err;
 
+	if (!av201x_attach(&priv->frontend, &av201x_avl_config, i2c)) {
+		p_error("av201x_attach failed");
+		vfree(priv->bs_state.props);
+		goto err;
+	}
+
 	p_debug("Demod ID %d, I2C addr 0x%x",
 		(priv->chip->chip_pub->i2c_addr >> AVL_DEMOD_ID_SHIFT) &
 		    AVL_DEMOD_ID_MASK,
