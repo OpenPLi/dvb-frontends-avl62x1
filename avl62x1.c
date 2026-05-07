@@ -855,22 +855,6 @@ static int stdout_dev_release(struct inode *inodep, struct file *filep)
 
 static int diseqc_set_voltage(struct dvb_frontend *fe,
 			      enum fe_sec_voltage voltage);
-
-struct avl_tuner av201x_avl_tuner = {
-    .blindscan_mode = 0,
-    .more_params = NULL,
-    .initialize = NULL,
-    .lock = NULL,
-    .get_lock_status = NULL,
-    .get_rf_strength = NULL,
-    .get_max_lpf = NULL,
-    .get_min_lpf = NULL,
-    .get_lpf_step_size = NULL,
-    .get_agc_slope = NULL,
-    .get_min_gain_voltage = NULL,
-    .get_max_gain_voltage = NULL,
-    .get_rf_freq_step_size = NULL};
-
 int init_error_stat(struct avl62x1_priv *priv)
 {
 	uint16_t r = AVL_EC_OK;
@@ -1680,7 +1664,30 @@ static struct dvb_frontend_ops avl62x1_ops = {
 	.i2c_gate_ctrl = i2c_gate_ctrl,
 };
 
-static int avl62x1_get_firmware(struct dvb_frontend *fe) {
+static struct avl_tuner av201x_avl_tuner = {
+	.blindscan_mode = 0,
+	.more_params = NULL,
+	.initialize = NULL,
+	.lock = NULL,
+	.get_lock_status = NULL,
+	.get_rf_strength = NULL,
+	.get_max_lpf = &av201x_get_max_lpf,
+	.get_min_lpf = &av201x_get_min_lpf,
+	.get_lpf_step_size = &av201x_get_lpf_step_size,
+	.get_agc_slope = &av201x_get_agc_slope,
+	.get_min_gain_voltage = &av201x_get_min_gain_voltage,
+	.get_max_gain_voltage = &av201x_get_max_gain_voltage,
+	.get_rf_freq_step_size = &av201x_get_rf_freq_step_size,
+};
+
+static struct av201x_config av201x_avl_config = {
+	.i2c_address = 0x62,
+	.id = ID_AV2018,
+	.xtal_freq = 27000,
+};
+
+static int avl62x1_get_firmware(struct dvb_frontend *fe)
+{
 	unsigned int fw_maj, fw_min, fw_build;
 	int fw_status;
 	struct avl62x1_priv *priv = fe->demodulator_priv;
