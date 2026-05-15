@@ -11,7 +11,6 @@
 #define _AVL62X1_H_
 
 #include <linux/version.h>
-#include <linux/refcount.h>
 #include <linux/firmware.h>
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/version.h>
@@ -24,6 +23,12 @@
 
 #define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
+#ifndef AVL_S2X_ENUMS
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0))
+#define AVL_S2X_ENUMS
+#endif
+#endif
+
 #define DVB_VER_INT(maj,min) (((maj) << 16) + (min))
 #define DVB_VER_ATLEAST(maj, min) \
  (DVB_VER_INT(DVB_API_VERSION,  DVB_API_VERSION_MINOR) >= DVB_VER_INT(maj, min))
@@ -32,11 +37,6 @@
 
 #define AVL62X1_VERSION xstr(AVL62X1_VER_MAJOR) "." xstr(AVL62X1_VER_MINOR) "." xstr(AVL62X1_VER_BUILD)
 
-#ifndef AVL_S2X_ENUMS
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,2,0)) //because nobody bothered to rev DVB_API_VERSION_MINOR :shrug: 
-#define AVL_S2X_ENUMS
-#endif
-#endif
 
 #define AVL62X1_BS_CTRL_PROP			isdbt_sb_segment_idx
 //isdbt_sb_segment_idx fields
