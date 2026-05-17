@@ -1475,22 +1475,12 @@ static int read_snr(struct dvb_frontend *fe, uint16_t *snr)
 }
 static int read_ber(struct dvb_frontend *fe, uint32_t *ber)
 {
-	struct avl62x1_priv *priv = fe->demodulator_priv;
-	int ret;
-
-	p_debug_lvl(10,"");
-
-	mutex_lock(&i2cctl_fe_mutex);
-	
-	//FIXME
+	/* BER is provided via dtv_property_cache stats by get_frontend().
+	 * Enigma2 reads BER/SNR from stats fields, not from this function.
+	 * avl62x1_get_per() returns PER not BER and causes display errors.
+	 * Return 0 to avoid displaying wrong values (e.g. 999). */
 	*ber = 0;
-	ret = (int)avl62x1_get_per(ber, priv->chip);
-	if (!ret)
-		*ber /= 100;
-
-	safe_mutex_unlock(&i2cctl_fe_mutex);
-
-	return ret;
+	return 0;
 }
 
 static enum dvbfe_algo get_frontend_algo(struct dvb_frontend *fe)
@@ -1618,29 +1608,23 @@ static struct dvb_frontend_ops avl62x1_ops = {
 		.frequency_tolerance_hz = 5 * MHz,
 		.symbol_rate_min = 0,
 		.symbol_rate_max = 60000000,
-	.caps =
-	    FE_CAN_FEC_1_2 |
-	    FE_CAN_FEC_2_3 |
-	    FE_CAN_FEC_3_4 |
-	    FE_CAN_FEC_4_5 |
-	    FE_CAN_FEC_5_6 |
-	    FE_CAN_FEC_6_7 |
-	    FE_CAN_FEC_7_8 |
-	    FE_CAN_FEC_8_9 |
-	    FE_CAN_FEC_AUTO |
-	    FE_CAN_QPSK |
-	    FE_CAN_QAM_16 |
-	    FE_CAN_QAM_32 |
-	    FE_CAN_QAM_64 |
-	    FE_CAN_QAM_AUTO |
-	    FE_CAN_TRANSMISSION_MODE_AUTO |
-	    FE_CAN_GUARD_INTERVAL_AUTO |
-	    FE_CAN_HIERARCHY_AUTO |
-	    FE_CAN_MUTE_TS |
-	    FE_CAN_2G_MODULATION |
-	    FE_CAN_MULTISTREAM |
-	    FE_CAN_INVERSION_AUTO |
-	    FE_CAN_RECOVER
+		.caps = FE_CAN_INVERSION_AUTO |
+			FE_CAN_FEC_1_2 |
+			FE_CAN_FEC_2_3 |
+			FE_CAN_FEC_3_4 |
+			FE_CAN_FEC_4_5 |
+			FE_CAN_FEC_5_6 |
+			FE_CAN_FEC_6_7 |
+			FE_CAN_FEC_7_8 |
+			FE_CAN_FEC_8_9 |
+			FE_CAN_FEC_AUTO |
+			FE_CAN_QPSK |
+			FE_CAN_TRANSMISSION_MODE_AUTO |
+			FE_CAN_GUARD_INTERVAL_AUTO |
+			FE_CAN_HIERARCHY_AUTO |
+			FE_CAN_MULTISTREAM |
+			FE_CAN_2G_MODULATION |
+			FE_CAN_RECOVER
 	},
 
 	.delsys = { SYS_DVBS2, SYS_DVBS, },
