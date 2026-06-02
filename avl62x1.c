@@ -937,39 +937,27 @@ static int acquire_dvbs_s2(struct dvb_frontend *fe)
 	//"-1" means ISI not specified and is very unlikely to be a valid
 	//  decoding of the other t2mi fields
 	if ((c->stream_id != -1) &&
-	    ((c->stream_id >> AVL62X1_BS_IS_T2MI_SHIFT) & 0x1))
+	    ((c->stream_id >> 29) & 0x1))
 	{
 		stream_info.stream_type = avl62x1_t2mi;
 		stream_info.t2mi.pid =
-		    (c->stream_id >> AVL62X1_BS_T2MI_PID_SHIFT) & 0x1FFF;
+		    (c->stream_id >> AVL62X1_T2MI_PID_SHIFT) & 0x1FFF;
 		stream_info.t2mi.plp_id =
-		    (c->stream_id >> AVL62X1_BS_T2MI_PLP_ID_SHIFT) & 0xFF;
+		    (c->stream_id >> AVL62X1_T2MI_PLP_ID_SHIFT) & 0xFF;
 		stream_info.t2mi.raw_mode = 0;
 		stream_info.isi = c->stream_id & 0xFF;
 
 		carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
-		printk("Acquire T2MI\n");
 	}
 	else
 	{
 		stream_info.stream_type = avl62x1_transport;
 		stream_info.isi = (c->stream_id == -1) ? 0 : (c->stream_id & 0xFF);
-#if DVB_VER_ATLEAST(5, 11)
-		//use scrambling_sequence_index if it's not the default n=0 val
+		/* use scrambling_sequence_index if set */
 		if (c->scrambling_sequence_index)
-		{
-			carrier_info.pl_scrambling =
-			    c->scrambling_sequence_index;
-		}
+			carrier_info.pl_scrambling = c->scrambling_sequence_index;
 		else
-		{
 			carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
-		}
-
-#else
-		carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
-#endif
-		printk("Acquire TS\n");
 	}
 
 	r = avl62x1_lock_tp(&carrier_info,
@@ -1495,6 +1483,7 @@ static enum dvbfe_algo get_frontend_algo(struct dvb_frontend *fe)
 static int set_frontend(struct dvb_frontend *fe)
 {
 	int ret;
+	struct avl62x1_priv *priv = fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	p_debug("");
 

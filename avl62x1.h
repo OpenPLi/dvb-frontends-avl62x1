@@ -38,20 +38,15 @@
 #define AVL62X1_VERSION xstr(AVL62X1_VER_MAJOR) "." xstr(AVL62X1_VER_MINOR) "." xstr(AVL62X1_VER_BUILD)
 
 
-#define AVL62X1_BS_CTRL_PROP			isdbt_sb_segment_idx
-//isdbt_sb_segment_idx fields
-#define AVL62X1_BS_CTRL_VALID_STREAM_MASK	(0x80000000)
-/* Aliases for compatibility with Edision blindscan implementation */
-#define AVL62X1_T2MI_CTRL_PROP			AVL62X1_BS_CTRL_PROP
-#define AVL62X1_T2MI_CTRL_VALID_STREAM_MASK	AVL62X1_BS_CTRL_VALID_STREAM_MASK
-#define AVL62X1_T2MI_PID_SHIFT			AVL62X1_BS_T2MI_PID_SHIFT
-#define AVL62X1_BS_CTRL_NEW_TUNE_MASK		(0x40000000)
-#define AVL62X1_BS_CTRL_MORE_RESULTS_MASK	(0x20000000)
-
-//stream_id fields
-#define AVL62X1_BS_IS_T2MI_SHIFT	29
-#define AVL62X1_BS_T2MI_PID_SHIFT	16
-#define AVL62X1_BS_T2MI_PLP_ID_SHIFT	8
+/* isdbt_sb_segment_idx carries T2MI control info:
+ * bit 31:    VALID_STREAM flag
+ * bits 28:16 T2MI PID (13 bits)
+ * bits 7:0   T2MI PLP-ID
+ */
+#define AVL62X1_T2MI_CTRL_PROP			isdbt_sb_segment_idx
+#define AVL62X1_T2MI_CTRL_VALID_STREAM_MASK	(0x80000000)
+#define AVL62X1_T2MI_PID_SHIFT			16
+#define AVL62X1_T2MI_PLP_ID_SHIFT		0
 
 struct i2cctl_ioctl_lock_req {
 	int demod;
