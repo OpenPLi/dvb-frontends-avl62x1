@@ -934,35 +934,39 @@ static int acquire_dvbs_s2(struct dvb_frontend *fe)
 	carrier_info.rf_freq_khz = c->frequency;
 	carrier_info.carrier_freq_offset_hz = 0;
 	carrier_info.symbol_rate_hz = c->symbol_rate;
-	//"-1" means ISI not specified and is very unlikely to be a valid
-	//  decoding of the other t2mi fields
-	if ((c->stream_id != -1) &&
-	    ((c->stream_id >> 29) & 0x1))
-	{
-		stream_info.stream_type = avl62x1_t2mi;
-		stream_info.t2mi.pid =
-		    (c->stream_id >> AVL62X1_T2MI_PID_SHIFT) & 0x1FFF;
-		stream_info.t2mi.plp_id =
-		    (c->stream_id >> AVL62X1_T2MI_PLP_ID_SHIFT) & 0xFF;
-		stream_info.t2mi.raw_mode = 0;
-		stream_info.isi = c->stream_id & 0xFF;
 
-		carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
-	}
+	if (c->scrambling_sequence_index)
+		carrier_info.pl_scrambling = c->scrambling_sequence_index;
 	else
-	{
+		carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
+
+	stream_info.carrier_idx = 0;
+	if (c->stream_id != NO_STREAM_ID_FILTER)
+		stream_info.isi = c->stream_id & 0xff;
+	else
+		stream_info.isi = 0;
+
+	if (c->AVL62X1_T2MI_CTRL_PROP != NO_STREAM_ID_FILTER &&
+	    c->AVL62X1_T2MI_CTRL_PROP & AVL62X1_T2MI_CTRL_VALID_STREAM_MASK) {
+		stream_info.stream_type = avl62x1_t2mi;
+		stream_info.t2mi.plp_id =
+			c->AVL62X1_T2MI_CTRL_PROP & 0xff;
+		stream_info.t2mi.raw_mode = 0;
+		stream_info.t2mi.pid_autodiscover = 0;
+		stream_info.t2mi.pid =
+			(c->AVL62X1_T2MI_CTRL_PROP >> AVL62X1_T2MI_PID_SHIFT)
+			& 0x1fff;
+	} else {
 		stream_info.stream_type = avl62x1_transport;
-		stream_info.isi = (c->stream_id == -1) ? 0 : (c->stream_id & 0xFF);
-		/* use scrambling_sequence_index if set */
-		if (c->scrambling_sequence_index)
-			carrier_info.pl_scrambling = c->scrambling_sequence_index;
-		else
-			carrier_info.pl_scrambling = AVL62X1_PL_SCRAM_AUTO;
+		stream_info.t2mi.plp_id = 0;
+		stream_info.t2mi.raw_mode = 0;
+		stream_info.t2mi.pid_autodiscover = 0;
+		stream_info.t2mi.pid = 0x1000;
 	}
 
 	r = avl62x1_lock_tp(&carrier_info,
 			    &stream_info,
-			    AVL_FALSE, /* don't do blind symbol rate */
+			    AVL_FALSE,
 			    priv->chip);
 
 	return r;
@@ -1209,8 +1213,7 @@ static int update_fe_props(
     struct avl62x1_stream_info *stream_info)
 {
 	uint16_t r = AVL_EC_OK;
-	props->frequency = carrier_info->rf_freq_khz +
-			   carrier_info->carrier_freq_offset_hz/1000;
+	props->frequency = carrier_info->rf_freq_khz;
 
 	props->inversion =
 	    (carrier_info->spectrum_invert == avl62x1_specpol_inverted)
