@@ -1486,7 +1486,6 @@ static enum dvbfe_algo get_frontend_algo(struct dvb_frontend *fe)
 static int set_frontend(struct dvb_frontend *fe)
 {
 	int ret;
-	struct avl62x1_priv *priv = fe->demodulator_priv;
 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 	p_debug("");
 
