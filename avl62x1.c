@@ -1545,16 +1545,7 @@ static int tune(struct dvb_frontend *fe,
 	*delay = HZ / 5;
 	if (re_tune)
 	{
-		int ret;
-		enum fe_status cur_status = 0;
-		struct avl62x1_priv *priv_halt = fe->demodulator_priv;
-		/* Only halt if not currently locked.
-		 * Halting during a valid lock interrupts QPSK reception.
-		 * Halting when unlocked clears stale 8PSK acquisition state. */
-		read_status(fe, &cur_status);
-		if (!(cur_status & FE_HAS_LOCK))
-			__avl62x1_halt(priv_halt->chip);
-		ret = set_frontend(fe);
+		int ret = set_frontend(fe);
 		if (ret)
 			return ret;
 	}
